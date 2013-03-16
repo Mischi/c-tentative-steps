@@ -5,6 +5,8 @@
 
 #include <string.h>
 
+#include <sys/queue.h>
+
 enum {
     LOOKUP = 0, /* default - looking rather than defining. */
     VERB = 1,
@@ -66,22 +68,26 @@ int lookup_word(char *word);
 
 %%
 
-main()
-{
-    yylex();
-}
 
 struct word {
     char *word_name;
     int word_type;
-    struct word *next;
+    SLIST_ENTRY(word) next_word;
 };
 
-
-struct word *word_list; /* first element in word list */
+SLIST_HEAD(, word) word_list;
 
 
 extern void *malloc();
+
+
+int
+main()
+{
+    SLIST_INIT(&word_list);
+    yylex();
+    return 0;
+}
 
 
 int
@@ -99,17 +105,15 @@ add_word(int type, char *word)
 
     wp = (struct word *) malloc(sizeof(struct word));
 
-    wp->next = word_list;
 
     /* have to copy the word itself as well */
 
     wp->word_name = (char *) malloc(strlen(word) + 1);
-    strcpy(wp->word_name, word);
+    strcpy(wp->word_name, word); 
 
     wp->word_type = type;
     
-    word_list = wp;
-
+    SLIST_INSERT_HEAD(&word_list, wp, next_word);
     return 1; /* it worked */
 }
 
@@ -117,9 +121,9 @@ add_word(int type, char *word)
 int
 lookup_word(char *word)
 {
-    struct word *wp = word_list;
+    struct word *wp;
 
-    for(; wp; wp = wp->next)
+    SLIST_FOREACH(wp, &word_list, next_word)
     {
         if(strcmp(wp->word_name, word) == 0)
         {
