@@ -1,6 +1,7 @@
 PROG=verbs
 SRCS=verbs.l
-LDADD=-lfl
+CFLAGS+= -Wall
+LDADD+= -lfl
 MAN=
 
 .include <bsd.prog.mk>

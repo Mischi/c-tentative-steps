@@ -1,6 +1,7 @@
 PROG=wordrecog
 SRCS=word-recognizer.l
-LDADD=-lfl
+CFLAGS+= -Wall
+LDADD+= -lfl
 MAN=
 
 .include <bsd.prog.mk>
