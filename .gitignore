@@ -1,3 +1,7 @@
 helloworld/helloworld
 lists/slist/slist
 *.o
+lexx/verbs/verbs
+lexx/verbs/verbs.c
+lexx/word-recognizer/wordrecog
+lexx/word-recognizer/word-recognizer.c
