@@ -1,6 +1,7 @@
 helloworld/helloworld
 lists/slist/slist
 *.o
+*.core
 lexyacc/verbs/verbs
 lexyacc/verbs/verbs.c
 lexyacc/word-recognizer/wordrecog
