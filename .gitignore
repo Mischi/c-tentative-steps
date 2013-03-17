@@ -6,3 +6,7 @@ lexyacc/verbs/verbs
 lexyacc/verbs/verbs.c
 lexyacc/word-recognizer/wordrecog
 lexyacc/word-recognizer/word-recognizer.c
+lexyacc/speach/parse.c
+lexyacc/speach/speach
+lexyacc/speach/speach.c
+lexyacc/speach/y.tab.h
