@@ -10,3 +10,4 @@ lexyacc/speach/parse.c
 lexyacc/speach/speach
 lexyacc/speach/speach.c
 lexyacc/speach/y.tab.h
+net/showip/showip
