@@ -1,5 +1,5 @@
 PROG=slist
 SRCS=slist.c
-MAN=
+NOMAN= noman
 
 .include <bsd.prog.mk>

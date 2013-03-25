@@ -3,6 +3,6 @@ SRCS=parse.y speach.l
 CFLAGS+=-I${.CURDIR} -I.
 CFLAGS+=-g
 LDADD+= -lfl
-MAN=
+NOMAN= noman
 
 .include <bsd.prog.mk>

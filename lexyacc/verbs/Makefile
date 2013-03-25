@@ -2,6 +2,6 @@ PROG=verbs
 SRCS=verbs.l
 CFLAGS+= -Wall
 LDADD+= -lfl
-MAN=
+NOMAN= noman
 
 .include <bsd.prog.mk>
