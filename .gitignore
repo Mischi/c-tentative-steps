@@ -1,5 +1,5 @@
 helloworld/helloworld
-lists/slist/slist
+slist/slist
 *.o
 *.core
 lexyacc/verbs/verbs
