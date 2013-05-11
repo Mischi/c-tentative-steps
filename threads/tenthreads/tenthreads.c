@@ -1,31 +1,57 @@
-#include <stdio.h>
-#include <string.h>
-#include <err.h>
-#include <pthread.h>
+#include <stdio.h>      // printf
+#include <stdlib.h>     // malloc
+#include <unistd.h>     // sleep
+#include <string.h>     // strerror
+#include <err.h>        // err errx
+#include <pthread.h>    // pthread_*
 
-void* child_routine(void*);
+#define THREADCOUNT 10
+
+struct data {
+    int number;
+    char *msg;
+};
+
+void *child_routine(void*);
 
 int
 main(int argc, char const *argv[])
 {
-    pthread_t thread;
-    int res;
-
-    if((res = pthread_create(&thread, NULL, child_routine, "Hello World")) != 0)
-        errx(1, "pthread_create: %s", strerror(res));
+    pthread_t thread[THREADCOUNT];
+    struct data *thread_data;
+    int res, i;
 
 
-    if((res = pthread_join(thread, NULL)) != 0)
-        errx(1, "pthread_join: %ss", strerror(res));
+    for(i = 0; i < THREADCOUNT; i++)
+    {
+            if((thread_data = malloc(sizeof(struct data))) == NULL)
+                err(1, "malloc");
+
+            thread_data->number = i+1;
+            thread_data->msg = "Hello World";
+
+            if((res = pthread_create(&thread[i], NULL, child_routine, thread_data)) != 0)
+                errx(1, "pthread_create: %s", strerror(res));
+    }
+
+
+
+    for(i = 0; i < THREADCOUNT; i++)
+    {
+            if((res = pthread_join(thread[i], NULL)) != 0)
+                errx(1, "pthread_join: %ss", strerror(res));
+    }
+
 
     return 0;
 }
 
-void*
-child_routine(void* args)
+void
+*child_routine(void *args)
 {
-    char *string = (char*)args;
+    struct data *thread_data = (struct data*)args;
     pthread_t id = pthread_self();
-    printf("'%s' from Thread %lu\n", string, id);
+    sleep(thread_data->number);
+    printf("'%s' from Thread %d with Thread Id: %lu\n", thread_data->msg, thread_data->number, id);
     pthread_exit(0);
 }
