@@ -12,4 +12,8 @@ lexyacc/speach/speach.c
 lexyacc/speach/y.tab.h
 net/showip/showip
 net/hwd/hwd
+threads/tenthreads/tenthreads
+zeromq/zmqhwclient/zmqhwclient
+zeromq/zmqhwworker/zmqhwworker
 *tags
+

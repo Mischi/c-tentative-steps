@@ -1,5 +1,5 @@
 .include <bsd.own.mk>
 
-SUBDIR= slist lexyacc net zeromq threads
+SUBDIR= tenthreads 
 
 .include <bsd.subdir.mk>
