@@ -1,5 +1,5 @@
 .include <bsd.own.mk>
 
-SUBDIR= slist lexyacc net zeromq
+SUBDIR= zmqhwclient zmqhwworker 
 
 .include <bsd.subdir.mk>
