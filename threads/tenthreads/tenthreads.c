@@ -51,6 +51,6 @@ void
 {
     struct data *thread_data = (struct data*)args;
     sleep(thread_data->number);
-    printf("'%s' from Thread %d\n", thread_data->msg, (unsigned long)thread_data->number);
+    printf("'%s' from Thread %d\n", thread_data->msg, thread_data->number);
     pthread_exit(0);
 }
