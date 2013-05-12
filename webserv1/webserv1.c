@@ -1,7 +1,17 @@
+#include <sys/types.h>  // getaddrinfo freeaddrinfo gai_strerror
+#include <sys/socket.h> // getaddrinfo freeaddrinfo gai_strerror
+                        // socket setsockopt bind
+
+#include <netdb.h>      // getaddrinfo freeaddrinfo gai_strerror
+
+#include <netinet/in.h>
+
+#include <arpa/inet.h>
+
 #include <stdio.h>      // printf snprintf
 #include <stdlib.h>     // strtonum
 #include <unistd.h>     // sleep
-#include <string.h>     // strerror
+#include <string.h>     // strerror memset
 #include <limits.h>     // INT_MAX 
 #include <err.h>        // errx
 #include <pthread.h>    // pthread_*
@@ -12,11 +22,18 @@
 #define ENDPOINT "inproc://requests"
 #define FD_BUFFER_SIZE 21
 
+#define PORT "8080"
+#define BACKLOG 10 /* how many pending connections queue will hold */
+
+
 void init_zmq_pushsocket(void**, void**);
 void init_worker_threads(pthread_t*, void*);
+void init_socket();
 
 void push_fd(void*, int);
 int pull_fd(void*);
+
+void *get_in_addr(struct sockaddr*);
 
 void *worker_routine(void*);
 
@@ -25,19 +42,30 @@ int
 main(int argc, char const *argv[])
 {
     pthread_t worker[WORKER];
+    struct sockaddr_storage client_addr;
+    socklen_t sin_size;
     void *context, *publisher;
-    int i, res;
+    int i, res, sockfd, clientfd;
 
     init_zmq_pushsocket(&context, &publisher);
     init_worker_threads(worker, context);
+    init_socket(&sockfd);
+    
+    printf("listening on port: %s for incoming connections\n", PORT);
 
-
-    /* TODO: bind to socket and start handleing requests */
-    printf("Sending test messages\n");
-    for(i = 0; i < 1000; i++)
+    while(1)
     {
-        push_fd(publisher, i);
+        sin_size = sizeof(client_addr);
+        clientfd = accept(sockfd, (struct sockaddr *)&client_addr, &sin_size);
+        if (clientfd == -1)
+        {
+            warn("accept");
+            continue;
+        }
+
+        push_fd(publisher, clientfd);
     }
+
     
     /* wait for threads to exit */
     for(i = 0; i < WORKER; i++)
@@ -89,6 +117,56 @@ init_worker_threads(pthread_t *worker, void *context)
 }
 
 void
+init_socket(int *sockfd)
+{
+    struct addrinfo hints, *servinfo, *p;
+    int res, yes = 1;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC; // use IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE; // use my IP
+
+
+    if ((res = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0)
+        errx(1,"getaddrinfo: %s", gai_strerror(res));
+
+
+    //loop through all results and bind to the first we can
+    for(p = servinfo; p != NULL; p = p->ai_next)
+    {
+        if ((*sockfd = socket(p->ai_family, p->ai_socktype, 
+                        p->ai_protocol)) == -1)
+        {
+            warn("server: socket");
+            continue;
+        }
+
+        if (setsockopt(*sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+            err(1, "setsockopt");
+
+        if (bind(*sockfd, p->ai_addr, p->ai_addrlen) == -1)
+        {
+            close(*sockfd);
+            warn("server: bind");
+            continue;
+        }
+
+        break;
+    }
+
+    if (p == NULL)
+    {
+        errx(2, "server: failed to bind\n");
+    }
+
+    freeaddrinfo(servinfo); // all done with this structure
+    
+    if (listen(*sockfd, BACKLOG) == -1)
+        err(1, "listen");
+}
+
+void
 push_fd(void *socket, int fd)
 {
     char pushbuffer[FD_BUFFER_SIZE];
@@ -116,9 +194,18 @@ pull_fd(void *socket)
 }
 
 void
+*get_in_addr(struct sockaddr *sa) /* get sockaddr, IPv4 or IPv6 */ 
+{
+    if (sa->sa_family == AF_INET)
+        return &(((struct sockaddr_in*)sa)->sin_addr);
+
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+void
 *worker_routine(void *context)
 {
-    int fd;
+    int clientfd;
 
     void *subscriber = zmq_socket(context, ZMQ_PULL);
     if(subscriber == NULL)
@@ -129,9 +216,11 @@ void
 
     while(1)
     {
-        fd = pull_fd(subscriber);
-        printf("result: %d\n", fd);
+        clientfd = pull_fd(subscriber);
+        
+        if (send(clientfd, "Hello, World!", 13, 0) == -1)
+            warn("send");
 
-        /* TODO: Handle request and send response */
+        close(clientfd);
     }
 }
