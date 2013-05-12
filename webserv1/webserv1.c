@@ -1,22 +1,24 @@
-#include <sys/types.h>  // getaddrinfo freeaddrinfo gai_strerror
-#include <sys/socket.h> // getaddrinfo freeaddrinfo gai_strerror
-                        // socket setsockopt bind
+#include <sys/types.h>  /* getaddrinfo freeaddrinfo gai_strerror */
+#include <sys/socket.h> /* getaddrinfo freeaddrinfo gai_strerror
+                           socket setsockopt bind */
 
-#include <netdb.h>      // getaddrinfo freeaddrinfo gai_strerror
+#include <netdb.h>      /* getaddrinfo freeaddrinfo gai_strerror */
 
 #include <netinet/in.h>
 
 #include <arpa/inet.h>
 
-#include <stdio.h>      // printf snprintf
-#include <stdlib.h>     // strtonum
-#include <unistd.h>     // sleep
-#include <string.h>     // strerror memset
-#include <limits.h>     // INT_MAX 
-#include <err.h>        // errx
-#include <pthread.h>    // pthread_*
+#include <stdio.h>      /* printf snprintf */
+#include <stdlib.h>     /* strtonum */
+#include <unistd.h>     /* sleep */
+#include <string.h>     /* strerror memset */
+#include <limits.h>     /* INT_MAX */
+#include <err.h>        /* errx */
+#include <pthread.h>    /* pthread_* */
+#include <signal.h>     /* sigemtyset sigaction */
 
-#include "zhelpers.h"   // zmq_*
+#include <zmq.h>        /* zmq_* */
+/*#include "zhelpers.h"   // zmq_* */
 
 #define WORKER 2
 #define ENDPOINT "inproc://requests"
@@ -37,6 +39,11 @@ void *get_in_addr(struct sockaddr*);
 
 void *worker_routine(void*);
 
+void signal_handler(int);
+void init_signal_handler(void);
+int s_interrupted = 0;
+
+
 
 int
 main(int argc, char const *argv[])
@@ -50,10 +57,11 @@ main(int argc, char const *argv[])
     init_zmq_pushsocket(&context, &publisher);
     init_worker_threads(worker, context);
     init_socket(&sockfd);
-    
+    init_signal_handler();
+
     printf("listening on port: %s for incoming connections\n", PORT);
 
-    while(1)
+    while(!s_interrupted)
     {
         sin_size = sizeof(client_addr);
         clientfd = accept(sockfd, (struct sockaddr *)&client_addr, &sin_size);
@@ -203,6 +211,23 @@ void
 }
 
 void
+init_signal_handler(void)
+{
+    struct sigaction action;
+    action.sa_handler = signal_handler;
+    action.sa_flags = 0;
+    sigemptyset(&action.sa_mask);
+    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGTERM, &action, NULL);
+}
+
+void
+signal_handler(int signal_value)
+{
+    s_interrupted = 1;
+}
+
+void
 *worker_routine(void *context)
 {
     int clientfd;
@@ -214,7 +239,7 @@ void
     if(zmq_connect(subscriber, ENDPOINT) != 0)
         err(1, NULL);
 
-    while(1)
+    while(!s_interrupted)
     {
         clientfd = pull_fd(subscriber);
         
@@ -223,4 +248,5 @@ void
 
         close(clientfd);
     }
+    pthread_exit(0);
 }
